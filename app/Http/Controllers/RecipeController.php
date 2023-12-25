@@ -65,7 +65,7 @@ class RecipeController extends Controller
                 }
             }
 
-        $recipes = $query->get();
+        $recipes = $query->paginate(5);
 
         $categories = Category::all();
 
@@ -93,7 +93,9 @@ class RecipeController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $recipe = Recipe::find($id);
+        $recipe->increment('views');
+        return view('recipes.show', compact('recipe'));
     }
 
     /**
