@@ -77,7 +77,8 @@ class RecipeController extends Controller
      */
     public function create()
     {
-        //
+        $categories = Category::all();
+        return view('recipes.create', compact('categories'));
     }
 
     /**
@@ -85,7 +86,14 @@ class RecipeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $posts = $request->all();
+        Recipe::insert([
+            'id' => Str::uuid(),
+            'title' => $posts['title'],
+            'description' => $posts['description'],
+            'category_id' => $posts['category'],
+            'user_id' => Auth::id(),
+        ]);
     }
 
     /**
