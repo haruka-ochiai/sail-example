@@ -87,6 +87,7 @@ class RecipeController extends Controller
     public function store(Request $request)
     {
         $posts = $request->all();
+        $image = $request->file('image');
         Recipe::insert([
             'id' => Str::uuid(),
             'title' => $posts['title'],
