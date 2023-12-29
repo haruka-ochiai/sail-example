@@ -11,4 +11,15 @@ window.onload = function(){
             });
         }
     });
+
+    steps.addEventListener('click', function(evt) {
+        if (evt.target.classList.contains('step-delete') || evt.target.closest('.step-delete') ) {
+          evt.target.closest('.step').remove();
+          var items = steps.querySelectorAll('.step');
+          items.forEach(function(item, index) {
+            item.querySelector('.step-number').innerHTML = '手順' + (index + 1);
+          });
+        }
+      })
 };
+
