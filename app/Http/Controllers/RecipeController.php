@@ -88,11 +88,16 @@ class RecipeController extends Controller
     {
         $posts = $request->all();
         $image = $request->file('image');
+        // s3にアップロード
+        $path = Storage::disk('s3')->putfile('recipe', $image, 'public');
+        // URLをデータベースに保存
+        $url = Storage::disk('s3')->url($path);
         Recipe::insert([
             'id' => Str::uuid(),
             'title' => $posts['title'],
             'description' => $posts['description'],
             'category_id' => $posts['category'],
+            'image' => $url,
             'user_id' => Auth::id(),
         ]);
     }
