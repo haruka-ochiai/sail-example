@@ -1,5 +1,6 @@
 <x-app-layout>
     <x-slot name="script">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.13.0/Sortable.min.js"></script>
         <script src="/js/recipe/create.js"></script>
     </x-slot>
     <form action="{{ route('recipe.store') }}" method="POST" class="w-10/12 p-4 mx-auto bg-white rounded" enctype="multipart/form-data">
@@ -31,7 +32,7 @@
         @for($i = 1; $i < 4; $i++)
             <div class="step flex justify-between items-center mb-2">
                 @include('components.bars-3')
-                <p>手順{{ $i }}</p>
+                <p class="step-number">手順{{ $i }}</p>
                 <input type="text" name="steps[]" placeholder="手順を入力"
                 class="border border-gray-300 p-2 mb-4 w-full rounded">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10 ml-4 step-delete text-gray-600">

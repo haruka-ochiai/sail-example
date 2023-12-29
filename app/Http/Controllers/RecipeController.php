@@ -87,19 +87,33 @@ class RecipeController extends Controller
     public function store(Request $request)
     {
         $posts = $request->all();
+        $uuid = Str::uuid()->toString();
+        // dd($posts);
+
         $image = $request->file('image');
         // s3にアップロード
         $path = Storage::disk('s3')->putfile('recipe', $image, 'public');
         // URLをデータベースに保存
         $url = Storage::disk('s3')->url($path);
         Recipe::insert([
-            'id' => Str::uuid(),
+            'id' => $uuid(),
             'title' => $posts['title'],
             'description' => $posts['description'],
             'category_id' => $posts['category'],
             'image' => $url,
             'user_id' => Auth::id(),
         ]);
+
+        $steps = [];
+        foreach($posts['steps'] as $key => $step){
+            $steps[$key] = [
+                'recipe_id' => $uuid,
+                'step.number' => $key + 1,
+                'description' => $step
+            ];
+        }
+        STEP::insert($steps);
+        dd($steps);
     }
 
     /**
