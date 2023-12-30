@@ -3,6 +3,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.13.0/Sortable.min.js"></script>
     <script src="/js/recipe/create.js"></script>
   </x-slot>
+  <form action="{{ route('recipe.update', ['id' => $recipe['id']]) }}" method="POST" class="w-10/12 p-4 mx-auto bg-white rounded" enctype="multipart/form-data">
     @csrf
     @method('PATCH')
     <!-- クロスサイトリクエストフォージェリ -->
@@ -60,5 +61,4 @@
     </div>
     <button type="button" id="step-add" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">手順を追加する</button>
   </form>
- 
 </x-app-layout>
