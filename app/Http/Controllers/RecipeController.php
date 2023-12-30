@@ -151,7 +151,14 @@ class RecipeController extends Controller
             ->first();
         $recipe_recode = Recipe::find($id);
         $recipe_recode->increment('views');
-        return view('recipes.show', compact('recipe'));
+
+        $is_my_recipe = false;
+        if( Auth::check() && (Auth::id() === $recipe['user_id']) ) {
+            $is_my_recipe = true;
+        }
+
+
+        return view('recipes.show', compact('recipe', 'is_my_recipe'));
     }
 
     /**
@@ -159,7 +166,12 @@ class RecipeController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $recipe = Recipe::with(['ingredients', 'steps', 'reviews.user', 'user'])
+            ->where('recipes.id', $id)
+            ->first()->toArray();
+        $categories = Category::all();
+        
+        return view('recipes.edit', compact('recipe', 'categories'));
     }
 
     /**
