@@ -42,31 +42,35 @@ class RecipeController extends Controller
      */
     public function index(Request $request)
     {
-        $filters =  $request->all();  
-    
-        $query = Recipe::query()->select('recipes.id', 'recipes.title', 'recipes.description',
-         'recipes.created_at', 'recipes.image', 'recipes.views', 'users.name' , \DB::raw('AVG(reviews.rating) as rating'))
+        $filters = $request->all();
+        // dd($filters);
+        $query = Recipe::query()->select('recipes.id', 'recipes.title', 'recipes.description', 'recipes.created_at', 'recipes.image', 'users.name'
+        , \DB::raw('AVG(reviews.rating) as rating'))
             ->join('users', 'users.id', '=', 'recipes.user_id')
             ->leftJoin('reviews', 'reviews.recipe_id', '=', 'recipes.id')
             ->groupBy('recipes.id')
             ->orderBy('recipes.created_at', 'desc');
 
-            if( !empty($filters)) {
-                if( !empty($filters['categories']) ) {
-                    $query->whereIn('recipes.category_id', $filters['categories']);
-                }
-                
-                if( !empty($filters['rating'])){
-                    $query->havingRaw('AVG(reviews.rating) >= ?', [$filters['rating']]);
-                }
-
-                if( !empty($filters['title'])){
-                    $query->where('recipes.title', 'like', '%'.$filters['title'].'%' );
-                }
+        if( !empty($filters) ) {
+                // もしカテゴリーが選択されていたら
+            if( !empty($filters['categories']) ) {
+                // カテゴリーで絞り込み選択したカテゴリーIDが含まれているレシピを取得
+                $query->whereIn('recipes.category_id', $filters['categories']);
             }
-
+            if( !empty($filters['rating']) ) {
+                // 評価で絞り込み
+                $query->havingRaw('AVG(reviews.rating) >= ?', [$filters['rating']])->orderBy('rating', 'desc');
+            }
+            if( !empty($filters['title']) ) {
+                // タイトルで絞り込み
+                // さつまいも
+                // さつまいもの甘露煮
+                // 美味しいさつまいもの甘露煮
+                $query->where('recipes.title', 'like', '%'.$filters['title'].'%');
+            }
+        }
         $recipes = $query->paginate(5);
-
+        // dd($recipes);
         $categories = Category::all();
 
         return view('recipes.index', compact('recipes', 'categories', 'filters'));
@@ -78,42 +82,63 @@ class RecipeController extends Controller
     public function create()
     {
         $categories = Category::all();
+
         return view('recipes.create', compact('categories'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(RecipeCreateRequest $request)
     {
         $posts = $request->all();
         $uuid = Str::uuid()->toString();
         // dd($posts);
-
         $image = $request->file('image');
-        // s3にアップロード
-        $path = Storage::disk('s3')->putfile('recipe', $image, 'public');
-        // URLをデータベースに保存
+        // s3に画像をアップロード
+        $path = Storage::disk('s3')->putFile('recipe', $image, 'public');
+        // dd($path);
+        // s3のURLを取得
         $url = Storage::disk('s3')->url($path);
-        Recipe::insert([
-            'id' => $uuid(),
-            'title' => $posts['title'],
-            'description' => $posts['description'],
-            'category_id' => $posts['category'],
-            'image' => $url,
-            'user_id' => Auth::id(),
-        ]);
-
-        $steps = [];
-        foreach($posts['steps'] as $key => $step){
-            $steps[$key] = [
-                'recipe_id' => $uuid,
-                'step.number' => $key + 1,
-                'description' => $step
-            ];
+        // DBにはURLを保存
+        try {
+            DB::beginTransaction();
+            Recipe::insert([
+                'id' => $uuid,
+                'title' => $posts['title'],
+                'description' => $posts['description'],
+                'category_id' => $posts['category'],
+                'image' => $url,
+                'user_id' => Auth::id()
+            ]);
+            $ingredients = [];
+            foreach($posts['ingredients'] as $key => $ingredient){
+                $ingredients[$key] = [
+                    'recipe_id' => $uuid,
+                    'name' => $ingredient['name'],
+                    'quantity' => $ingredient['quantity']
+                ];
+            }
+            Ingredient::insert($ingredients);
+            $steps = [];
+            foreach($posts['steps'] as $key => $step){
+                $steps[$key] = [
+                    'recipe_id' => $uuid,
+                    'step_number' => $key + 1,
+                    'description' => $step
+                ];
+            }
+            STEP::insert($steps);
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            \Log::debug(print_r($th->getMessage(), true));
+            throw $th;
         }
-        STEP::insert($steps);
-        dd($steps);
+        // dd($steps);
+        flash()->success('レシピを投稿しました！');
+         
+        return redirect()->route('recipe.show', ['id' => $uuid]);
     }
 
     /**
